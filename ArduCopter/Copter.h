@@ -242,7 +242,21 @@ public:
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+    void failsafe_terrain_set_status(bool data_ok);
+    // Failsafe
+    struct {
+        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
+        uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
+        uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
 
+        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
+
+        uint8_t radio               : 1; // A status flag for the radio failsafe
+        uint8_t gcs                 : 1; // A status flag for the ground station failsafe
+        uint8_t ekf                 : 1; // true if ekf failsafe has occurred
+        uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
+        uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
+    } failsafe;
 private:
     static const AP_FWVersion fwver;
 
@@ -405,20 +419,7 @@ private:
     // intertial nav alt when we armed
     float arming_altitude_m;
 
-    // Failsafe
-    struct {
-        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
-        uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
-        uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
-
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
-
-        uint8_t radio               : 1; // A status flag for the radio failsafe
-        uint8_t gcs                 : 1; // A status flag for the ground station failsafe
-        uint8_t ekf                 : 1; // true if ekf failsafe has occurred
-        uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
-        uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
-    } failsafe;
+    
 
     bool any_failsafe_triggered() const {
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
@@ -732,7 +733,7 @@ private:
     void failsafe_gcs_on_event(void);
     void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();
-    void failsafe_terrain_set_status(bool data_ok);
+    //void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void gpsglitch_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
@@ -993,7 +994,7 @@ private:
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ModeAutorotate mode_autorotate;
 #endif
-
+    ModeDrawStar mode_DrawStar;
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
